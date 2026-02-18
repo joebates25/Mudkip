@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+mac-app/.build/
 
 # Logs
 npm-debug.log*
