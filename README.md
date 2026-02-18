@@ -58,3 +58,13 @@ Remaining differences from true VS Code preview:
 - `src/styles/app.css`: shell styling and theme variable mapping
 - `electron/main.cjs`: cross-platform desktop main process
 - `electron/preload.cjs`: secure Electron IPC bridge for open/read actions
+
+## Rust/Tauri Prototype
+
+A separate Rust/Tauri prototype lives at:
+
+- `tauri-app/`
+
+Run instructions are in:
+
+- `tauri-app/README.md`

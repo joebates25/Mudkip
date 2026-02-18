@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VS Code-like Markdown Viewer (Tauri)</title>
+  </head>
+  <body class="vscode-dark">
+    <div class="app-shell">
+      <header class="toolbar">
+        <button id="open-file-button" type="button">Open Markdown File</button>
+        <button id="open-vscode-button" type="button" disabled>Open in VS Code</button>
+        <label for="theme-select">Theme</label>
+        <select id="theme-select" aria-label="Theme">
+          <option value="vscode-dark">Dark+</option>
+          <option value="vscode-light">Light+</option>
+        </select>
+        <span id="file-name" class="file-name">No file selected</span>
+      </header>
+      <main id="preview" class="preview" aria-live="polite"></main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
