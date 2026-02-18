@@ -17,6 +17,8 @@ import "./styles/vscode-markdown.css";
 import "./styles/vscode-highlight.css";
 import "./styles/app.css";
 
+const desktopAPI = window.markdownViewerDesktop ?? null;
+
 hljs.registerLanguage("bash", bash);
 hljs.registerLanguage("sh", bash);
 hljs.registerLanguage("css", css);
@@ -84,12 +86,23 @@ function setTheme(themeClass) {
   document.body.classList.add(themeClass);
 }
 
-function renderMarkdown(source) {
+function setBaseHref(baseHref) {
+  let baseEl = document.getElementById("markdown-base-href");
+  if (!baseEl) {
+    baseEl = document.createElement("base");
+    baseEl.id = "markdown-base-href";
+    document.head.appendChild(baseEl);
+  }
+  baseEl.setAttribute("href", baseHref ?? "./");
+}
+
+function renderMarkdown(source, options = {}) {
+  setBaseHref(options.baseHref);
   const rendered = markdown.render(source);
   previewEl.innerHTML = DOMPurify.sanitize(rendered);
 }
 
-async function openFile(file) {
+async function openFileFromBrowser(file) {
   if (!file) {
     return;
   }
@@ -99,13 +112,51 @@ async function openFile(file) {
   fileNameEl.textContent = file.name;
 }
 
+function renderDesktopPayload(payload) {
+  if (!payload) {
+    return;
+  }
+
+  renderMarkdown(payload.content, { baseHref: payload.baseHref });
+  fileNameEl.textContent = payload.fileName;
+}
+
+async function openDesktopFileDialog() {
+  if (!desktopAPI) {
+    return;
+  }
+
+  const result = await desktopAPI.openMarkdownDialog();
+  if (result?.canceled || !result?.payload) {
+    return;
+  }
+
+  renderDesktopPayload(result.payload);
+}
+
+async function openDesktopFileByPath(filePath) {
+  if (!desktopAPI || !filePath) {
+    return;
+  }
+
+  const payload = await desktopAPI.readMarkdownFile(filePath);
+  renderDesktopPayload(payload);
+}
+
 openFileButton.addEventListener("click", () => {
+  if (desktopAPI) {
+    openDesktopFileDialog().catch((error) => {
+      console.error("Failed to open markdown file:", error);
+    });
+    return;
+  }
+
   fileInput.click();
 });
 
 fileInput.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
-  await openFile(file);
+  await openFileFromBrowser(file);
   fileInput.value = "";
 });
 
@@ -113,5 +164,28 @@ themeSelect.addEventListener("change", (event) => {
   setTheme(event.target.value);
 });
 
-setTheme("vscode-dark");
+if (desktopAPI) {
+  desktopAPI
+    .getSystemTheme()
+    .then((systemTheme) => {
+      if (systemTheme === "vscode-light" || systemTheme === "vscode-dark") {
+        themeSelect.value = systemTheme;
+        setTheme(systemTheme);
+      } else {
+        setTheme("vscode-dark");
+      }
+    })
+    .catch(() => {
+      setTheme("vscode-dark");
+    });
+
+  desktopAPI.onOpenOnLaunch((filePath) => {
+    openDesktopFileByPath(filePath).catch((error) => {
+      console.error("Failed to open launch file:", error);
+    });
+  });
+} else {
+  setTheme("vscode-dark");
+}
+
 renderMarkdown(defaultMarkdown);

@@ -2,7 +2,7 @@
 
 Prototype for a **read-only markdown viewer** with a local file picker and a render surface styled to match **VS Code Markdown Preview** as closely as possible.
 
-## Run
+## Run (Browser)
 
 ```bash
 npm install
@@ -10,6 +10,23 @@ npm run dev
 ```
 
 Open the local Vite URL (normally `http://localhost:5173`).
+
+## Run (Cross-platform desktop: macOS, Windows, Linux)
+
+```bash
+npm install
+npm run desktop
+```
+
+This builds the web renderer and starts an Electron desktop window with:
+
+- Native OS file open dialog
+- Optional launch-path file opening:
+
+```bash
+npm run build
+npx electron . /absolute/path/to/file.md
+```
 
 ## What this prototype does
 
@@ -39,3 +56,5 @@ Remaining differences from true VS Code preview:
 - `src/styles/vscode-markdown.css`: copied from VS Code source
 - `src/styles/vscode-highlight.css`: copied from VS Code source
 - `src/styles/app.css`: shell styling and theme variable mapping
+- `electron/main.cjs`: cross-platform desktop main process
+- `electron/preload.cjs`: secure Electron IPC bridge for open/read actions
