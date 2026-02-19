@@ -79,7 +79,7 @@ const markdown = new MarkdownIt({
   .use(markdownItFootnote)
   .use(markdownSourceLinePlugin);
 
-const defaultMarkdown = `# Markdown Viewer POC
+const defaultMarkdown = `# Mudkip
 
 Read-only preview tuned to match VS Code Markdown Preview.
 

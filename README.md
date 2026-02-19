@@ -1,4 +1,4 @@
-# Markdown Viewer POC
+# Mudkip
 
 Prototype for a **read-only markdown viewer** with a local file picker and a render surface styled to match **VS Code Markdown Preview** as closely as possible.
 

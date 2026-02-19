@@ -1,5 +1,5 @@
 {
-  "name": "markdown-viewer-poc",
+  "name": "mudkip",
   "version": "1.0.0",
   "description": "",
   "main": "electron/main.cjs",
@@ -32,8 +32,8 @@
     "vite": "^7.3.1"
   },
   "build": {
-    "appId": "com.josephbates.markdownviewer",
-    "productName": "Markdown Viewer",
+    "appId": "com.josephbates.mudkip",
+    "productName": "Mudkip",
     "files": [
       "dist/**/*",
       "electron/**/*",
