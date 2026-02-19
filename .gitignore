@@ -1,12 +1,9 @@
 # Dependencies
 node_modules/
+package-lock.json
 
 # Build output
 dist/
-mac-app/.build/
-target/
-src-tauri/target/
-src-tauri/gen/
 
 # Logs
 npm-debug.log*

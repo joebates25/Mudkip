@@ -36,10 +36,31 @@ hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("ts", typescript);
 
 const previewEl = document.getElementById("preview");
+const appShellEl = document.querySelector(".app-shell");
 const openFileButton = document.getElementById("open-file-button");
+const toggleTOCButton = document.getElementById("toggle-toc-button");
+const openVSCodeButton = document.getElementById("open-vscode-button");
 const fileInput = document.getElementById("file-input");
 const fileNameEl = document.getElementById("file-name");
 const themeSelect = document.getElementById("theme-select");
+const tocDrawerEl = document.getElementById("toc-drawer");
+const tocListEl = document.getElementById("toc-list");
+const tocEmptyEl = document.getElementById("toc-empty");
+let currentFilePath = null;
+
+function markdownSourceLinePlugin(md) {
+  md.core.ruler.after("block", "attach_source_lines", (state) => {
+    for (const token of state.tokens) {
+      if (!token.map || token.nesting !== 1 || !token.type.endsWith("_open")) {
+        continue;
+      }
+
+      const [startLine, endLine] = token.map;
+      token.attrSet("data-source-line", String(startLine + 1));
+      token.attrSet("data-source-line-end", String(Math.max(startLine + 1, endLine)));
+    }
+  });
+}
 
 const markdown = new MarkdownIt({
   html: true,
@@ -53,37 +74,81 @@ const markdown = new MarkdownIt({
   },
 })
   .use(markdownItTaskLists, { enabled: true, label: true })
-  .use(markdownItFootnote);
+  .use(markdownItFootnote)
+  .use(markdownSourceLinePlugin);
 
 const defaultMarkdown = `# Markdown Viewer POC
 
-This prototype is tuned to look like **VS Code Markdown Preview**.
+Read-only preview tuned to match VS Code Markdown Preview.
 
-## Features
+- Native file open dialog in Electron
+- Table of contents drawer from headings
+- "Open in VS Code" at current scroll position
 
-- Read-only rendering
-- File picker for local \`.md\` files
-- VS Code style typography and spacing
-- Syntax-highlighted fenced code blocks
-
-### Code
-
-\`\`\`ts
-type User = {
-  id: string;
-  email: string;
-};
-
-const format = (user: User) => \`\${user.id}: \${user.email}\`;
-console.log(format({ id: "42", email: "dev@example.com" }));
-\`\`\`
-
-> Open a markdown file to replace this content.
+Use **Open Markdown File** to load a local file.
 `;
 
 function setTheme(themeClass) {
   document.body.classList.remove("vscode-dark", "vscode-light");
   document.body.classList.add(themeClass);
+}
+
+function setTOCOpen(isOpen) {
+  appShellEl.classList.toggle("toc-open", isOpen);
+  toggleTOCButton.setAttribute("aria-expanded", String(isOpen));
+  tocDrawerEl.setAttribute("aria-hidden", String(!isOpen));
+}
+
+function slugifyHeading(text) {
+  return (
+    text
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "section"
+  );
+}
+
+function rebuildTableOfContents() {
+  const headings = Array.from(previewEl.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+  const seenIds = new Map();
+  tocListEl.innerHTML = "";
+
+  if (headings.length === 0) {
+    tocEmptyEl.hidden = false;
+    return;
+  }
+
+  tocEmptyEl.hidden = true;
+
+  for (const heading of headings) {
+    const text = heading.textContent?.trim();
+    if (!text) {
+      continue;
+    }
+
+    const level = Number.parseInt(heading.tagName.slice(1), 10);
+    const baseSlug = slugifyHeading(text);
+    const currentCount = seenIds.get(baseSlug) ?? 0;
+    seenIds.set(baseSlug, currentCount + 1);
+    const id = currentCount === 0 ? baseSlug : `${baseSlug}-${currentCount + 1}`;
+    heading.id = id;
+
+    const item = document.createElement("li");
+    item.className = "toc-item";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "toc-link";
+    button.textContent = text;
+    button.dataset.targetId = id;
+    button.style.paddingLeft = `${12 + Math.max(0, level - 1) * 14}px`;
+
+    item.append(button);
+    tocListEl.append(item);
+  }
 }
 
 function setBaseHref(baseHref) {
@@ -100,6 +165,7 @@ function renderMarkdown(source, options = {}) {
   setBaseHref(options.baseHref);
   const rendered = markdown.render(source);
   previewEl.innerHTML = DOMPurify.sanitize(rendered);
+  rebuildTableOfContents();
 }
 
 async function openFileFromBrowser(file) {
@@ -110,6 +176,8 @@ async function openFileFromBrowser(file) {
   const contents = await file.text();
   renderMarkdown(contents);
   fileNameEl.textContent = file.name;
+  currentFilePath = null;
+  openVSCodeButton.disabled = true;
 }
 
 function renderDesktopPayload(payload) {
@@ -118,7 +186,9 @@ function renderDesktopPayload(payload) {
   }
 
   renderMarkdown(payload.content, { baseHref: payload.baseHref });
-  fileNameEl.textContent = payload.fileName;
+  fileNameEl.textContent = payload.fileName ?? "Unknown";
+  currentFilePath = payload.filePath ?? null;
+  openVSCodeButton.disabled = !currentFilePath;
 }
 
 async function openDesktopFileDialog() {
@@ -143,6 +213,98 @@ async function openDesktopFileByPath(filePath) {
   renderDesktopPayload(payload);
 }
 
+async function bindExternalOpenEvents() {
+  if (!desktopAPI) {
+    return;
+  }
+
+  if (typeof desktopAPI.consumePendingExternalOpenPath === "function") {
+    const pendingPath = await desktopAPI.consumePendingExternalOpenPath();
+    if (pendingPath) {
+      await openDesktopFileByPath(pendingPath);
+    }
+  }
+
+  if (typeof desktopAPI.onExternalFileOpen === "function") {
+    desktopAPI.onExternalFileOpen((filePath) => {
+      openDesktopFileByPath(filePath).catch((error) => {
+        console.error("Failed to open externally provided file:", error);
+      });
+    });
+  }
+}
+
+function getScrollContainer() {
+  if (previewEl.scrollHeight > previewEl.clientHeight + 1) {
+    return previewEl;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+
+function getViewportTop(scrollContainer) {
+  if (scrollContainer === previewEl) {
+    return previewEl.getBoundingClientRect().top + 1;
+  }
+  return 1;
+}
+
+function getCurrentSourceLine() {
+  const sourceNodes = previewEl.querySelectorAll("[data-source-line]");
+  if (sourceNodes.length === 0) {
+    return 1;
+  }
+
+  const scrollContainer = getScrollContainer();
+  const viewportTop = getViewportTop(scrollContainer);
+
+  let containingCandidate = null;
+  let firstBelowCandidate = null;
+
+  for (const node of sourceNodes) {
+    const rect = node.getBoundingClientRect();
+    if (rect.bottom <= viewportTop) {
+      continue;
+    }
+
+    if (rect.top <= viewportTop) {
+      if (!containingCandidate || rect.top > containingCandidate.rect.top) {
+        containingCandidate = { node, rect };
+      }
+      continue;
+    }
+
+    if (!firstBelowCandidate || rect.top < firstBelowCandidate.rect.top) {
+      firstBelowCandidate = { node, rect };
+    }
+  }
+
+  const candidate = containingCandidate || firstBelowCandidate;
+  if (!candidate) {
+    return 1;
+  }
+
+  const startLine = Number.parseInt(candidate.node.getAttribute("data-source-line") ?? "1", 10);
+  const endLineRaw = Number.parseInt(candidate.node.getAttribute("data-source-line-end") ?? `${startLine}`, 10);
+  const endLine = Number.isFinite(endLineRaw) ? Math.max(startLine, endLineRaw) : startLine;
+
+  if (!containingCandidate || endLine <= startLine || candidate.rect.height <= 0) {
+    return startLine;
+  }
+
+  const progress = Math.max(0, Math.min(1, (viewportTop - candidate.rect.top) / candidate.rect.height));
+  const mappedLine = startLine + Math.round(progress * (endLine - startLine));
+  return Math.max(startLine, Math.min(endLine, mappedLine));
+}
+
+async function openInVSCodeAtCurrentPosition() {
+  if (!desktopAPI || !currentFilePath || typeof desktopAPI.openInVSCodeAtLine !== "function") {
+    return;
+  }
+
+  const line = getCurrentSourceLine();
+  await desktopAPI.openInVSCodeAtLine(currentFilePath, line);
+}
+
 openFileButton.addEventListener("click", () => {
   if (desktopAPI) {
     openDesktopFileDialog().catch((error) => {
@@ -152,6 +314,31 @@ openFileButton.addEventListener("click", () => {
   }
 
   fileInput.click();
+});
+
+toggleTOCButton.addEventListener("click", () => {
+  const isOpen = appShellEl.classList.contains("toc-open");
+  setTOCOpen(!isOpen);
+});
+
+tocListEl.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-target-id]");
+  if (!button) {
+    return;
+  }
+
+  const heading = previewEl.querySelector(`#${CSS.escape(button.dataset.targetId)}`);
+  if (!heading) {
+    return;
+  }
+
+  heading.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+openVSCodeButton.addEventListener("click", () => {
+  openInVSCodeAtCurrentPosition().catch((error) => {
+    console.error("Unable to open VS Code:", error);
+  });
 });
 
 fileInput.addEventListener("change", async (event) => {
@@ -179,13 +366,20 @@ if (desktopAPI) {
       setTheme("vscode-dark");
     });
 
-  desktopAPI.onOpenOnLaunch((filePath) => {
-    openDesktopFileByPath(filePath).catch((error) => {
-      console.error("Failed to open launch file:", error);
+  if (typeof desktopAPI.onOpenOnLaunch === "function") {
+    desktopAPI.onOpenOnLaunch((filePath) => {
+      openDesktopFileByPath(filePath).catch((error) => {
+        console.error("Failed to open launch file:", error);
+      });
     });
-  });
+  }
 } else {
   setTheme("vscode-dark");
 }
 
 renderMarkdown(defaultMarkdown);
+setTOCOpen(false);
+openVSCodeButton.disabled = true;
+bindExternalOpenEvents().catch((error) => {
+  console.error("Unable to bind external open events:", error);
+});

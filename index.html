@@ -9,6 +9,8 @@
     <div class="app-shell">
       <header class="toolbar">
         <button id="open-file-button" type="button">Open Markdown File</button>
+        <button id="toggle-toc-button" type="button" aria-expanded="false" aria-controls="toc-drawer">Table of Contents</button>
+        <button id="open-vscode-button" type="button" disabled>Open in VS Code</button>
         <input id="file-input" type="file" accept=".md,.markdown,.mdown,.mkd,text/markdown" hidden />
         <label for="theme-select">Theme</label>
         <select id="theme-select" aria-label="Theme">
@@ -17,7 +19,14 @@
         </select>
         <span id="file-name" class="file-name">No file selected</span>
       </header>
-      <main id="preview" class="preview" aria-live="polite"></main>
+      <section class="content-area">
+        <aside id="toc-drawer" class="toc-drawer" aria-hidden="true">
+          <div class="toc-header">Contents</div>
+          <div id="toc-empty" class="toc-empty">No headings found.</div>
+          <ul id="toc-list" class="toc-list"></ul>
+        </aside>
+        <main id="preview" class="preview" aria-live="polite"></main>
+      </section>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

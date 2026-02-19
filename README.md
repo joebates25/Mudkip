@@ -5,8 +5,8 @@ Prototype for a **read-only markdown viewer** with a local file picker and a ren
 ## Run (Browser)
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Open the local Vite URL (normally `http://localhost:5173`).
@@ -14,19 +14,30 @@ Open the local Vite URL (normally `http://localhost:5173`).
 ## Run (Cross-platform desktop: macOS, Windows, Linux)
 
 ```bash
-npm install
-npm run desktop
+bun install
+bun run desktop
 ```
 
 This builds the web renderer and starts an Electron desktop window with:
 
 - Native OS file open dialog
-- Optional launch-path file opening:
+- Optional launch-path file opening
+- `Table of Contents` drawer (toggle from toolbar)
+- `Open in VS Code` at the source line matching current preview scroll position
+- macOS external file-open event handling (`Open With` / Finder handoff)
 
 ```bash
-npm run build
-npx electron . /absolute/path/to/file.md
+bun run build
+bunx electron . /absolute/path/to/file.md
 ```
+
+## Package (macOS)
+
+```bash
+bun run desktop:dist
+```
+
+This produces a packaged macOS app/DMG with markdown file associations (`.md`, `.markdown`, `.mdown`, `.mkd`) for Finder `Open With`.
 
 ## What this prototype does
 
@@ -58,13 +69,3 @@ Remaining differences from true VS Code preview:
 - `src/styles/app.css`: shell styling and theme variable mapping
 - `electron/main.cjs`: cross-platform desktop main process
 - `electron/preload.cjs`: secure Electron IPC bridge for open/read actions
-
-## Rust/Tauri Prototype
-
-A separate Rust/Tauri prototype lives at:
-
-- `tauri-app/`
-
-Run instructions are in:
-
-- `tauri-app/README.md`

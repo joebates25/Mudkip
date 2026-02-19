@@ -20,6 +20,7 @@ body {
   background: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
   padding: 0;
+  overflow: hidden;
 }
 
 body.vscode-dark {
@@ -43,12 +44,29 @@ body.vscode-light {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto 1fr;
 }
 
+.content-area {
+  --toc-width: min(300px, 85vw);
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding-left: 0;
+  transition: padding-left 180ms ease;
+}
+
+.app-shell.toc-open .content-area {
+  padding-left: var(--toc-width);
+}
+
 .toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -72,9 +90,78 @@ body.vscode-light {
   opacity: 0.75;
 }
 
+.toc-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--toc-width);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--vscode-widget-border);
+  background: color-mix(in srgb, var(--vscode-editor-background) 93%, black 7%);
+  transform: translateX(calc(-100% - 1px));
+  transition: transform 180ms ease;
+  z-index: 20;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.25);
+}
+
+.app-shell.toc-open .toc-drawer {
+  transform: translateX(0);
+}
+
+.toc-header {
+  padding: 10px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--vscode-widget-border);
+  opacity: 0.8;
+}
+
+.toc-empty {
+  padding: 12px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  overflow: auto;
+}
+
+.toc-item {
+  margin: 0;
+  padding: 0;
+}
+
+.toc-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--vscode-editor-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-link:hover {
+  background: color-mix(in srgb, var(--vscode-editor-background) 80%, white 20%);
+}
+
 .preview {
   background: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
+  overflow: auto;
+  min-height: 0;
+  height: 100%;
+  transition: width 180ms ease;
 }
 
 .preview a {
