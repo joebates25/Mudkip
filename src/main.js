@@ -40,6 +40,7 @@ const appShellEl = document.querySelector(".app-shell");
 const openFileButton = document.getElementById("open-file-button");
 const toggleTOCButton = document.getElementById("toggle-toc-button");
 const openVSCodeButton = document.getElementById("open-vscode-button");
+const toggleAutoRefreshButton = document.getElementById("toggle-autorefresh-button");
 const fileInput = document.getElementById("file-input");
 const fileNameEl = document.getElementById("file-name");
 const themeSelect = document.getElementById("theme-select");
@@ -47,6 +48,7 @@ const tocDrawerEl = document.getElementById("toc-drawer");
 const tocListEl = document.getElementById("toc-list");
 const tocEmptyEl = document.getElementById("toc-empty");
 let currentFilePath = null;
+let autoRefreshEnabled = true;
 
 function markdownSourceLinePlugin(md) {
   md.core.ruler.after("block", "attach_source_lines", (state) => {
@@ -84,6 +86,7 @@ Read-only preview tuned to match VS Code Markdown Preview.
 - Native file open dialog in Electron
 - Table of contents drawer from headings
 - "Open in VS Code" at current scroll position
+- Auto-refresh on save for opened files
 
 Use **Open Markdown File** to load a local file.
 `;
@@ -168,6 +171,42 @@ function renderMarkdown(source, options = {}) {
   rebuildTableOfContents();
 }
 
+function getPreviewScrollRatio() {
+  const maxScroll = previewEl.scrollHeight - previewEl.clientHeight;
+  if (maxScroll <= 0) {
+    return 0;
+  }
+  return previewEl.scrollTop / maxScroll;
+}
+
+function restorePreviewScrollRatio(ratio) {
+  const maxScroll = previewEl.scrollHeight - previewEl.clientHeight;
+  if (maxScroll <= 0) {
+    previewEl.scrollTop = 0;
+    return;
+  }
+  previewEl.scrollTop = Math.max(0, Math.min(maxScroll, maxScroll * ratio));
+}
+
+async function syncAutoRefreshWatcher() {
+  if (!desktopAPI) {
+    return;
+  }
+
+  if (!autoRefreshEnabled || !currentFilePath || typeof desktopAPI.startAutoRefreshWatch !== "function") {
+    if (typeof desktopAPI.stopAutoRefreshWatch === "function") {
+      await desktopAPI.stopAutoRefreshWatch();
+    }
+    return;
+  }
+
+  await desktopAPI.startAutoRefreshWatch(currentFilePath);
+}
+
+function updateAutoRefreshButton() {
+  toggleAutoRefreshButton.textContent = `Auto-refresh: ${autoRefreshEnabled ? "On" : "Off"}`;
+}
+
 async function openFileFromBrowser(file) {
   if (!file) {
     return;
@@ -178,17 +217,36 @@ async function openFileFromBrowser(file) {
   fileNameEl.textContent = file.name;
   currentFilePath = null;
   openVSCodeButton.disabled = true;
+
+  syncAutoRefreshWatcher().catch((error) => {
+    console.error("Failed to stop auto-refresh watcher:", error);
+  });
 }
 
-function renderDesktopPayload(payload) {
+function renderDesktopPayload(payload, options = {}) {
   if (!payload) {
     return;
   }
 
+  const previousScrollRatio = options.preserveScroll ? getPreviewScrollRatio() : null;
+
   renderMarkdown(payload.content, { baseHref: payload.baseHref });
+
+  if (previousScrollRatio !== null) {
+    requestAnimationFrame(() => {
+      restorePreviewScrollRatio(previousScrollRatio);
+    });
+  }
+
   fileNameEl.textContent = payload.fileName ?? "Unknown";
   currentFilePath = payload.filePath ?? null;
   openVSCodeButton.disabled = !currentFilePath;
+
+  if (options.syncWatcher !== false) {
+    syncAutoRefreshWatcher().catch((error) => {
+      console.error("Failed to sync auto-refresh watcher:", error);
+    });
+  }
 }
 
 async function openDesktopFileDialog() {
@@ -230,6 +288,15 @@ async function bindExternalOpenEvents() {
       openDesktopFileByPath(filePath).catch((error) => {
         console.error("Failed to open externally provided file:", error);
       });
+    });
+  }
+
+  if (typeof desktopAPI.onFileChanged === "function") {
+    desktopAPI.onFileChanged((payload) => {
+      if (!payload || !payload.filePath || payload.filePath !== currentFilePath) {
+        return;
+      }
+      renderDesktopPayload(payload, { preserveScroll: true, syncWatcher: false });
     });
   }
 }
@@ -341,6 +408,14 @@ openVSCodeButton.addEventListener("click", () => {
   });
 });
 
+toggleAutoRefreshButton.addEventListener("click", () => {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  updateAutoRefreshButton();
+  syncAutoRefreshWatcher().catch((error) => {
+    console.error("Failed to toggle auto-refresh watcher:", error);
+  });
+});
+
 fileInput.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   await openFileFromBrowser(file);
@@ -380,6 +455,12 @@ if (desktopAPI) {
 renderMarkdown(defaultMarkdown);
 setTOCOpen(false);
 openVSCodeButton.disabled = true;
+updateAutoRefreshButton();
+
+if (!desktopAPI) {
+  toggleAutoRefreshButton.disabled = true;
+}
+
 bindExternalOpenEvents().catch((error) => {
   console.error("Unable to bind external open events:", error);
 });

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, nativeTheme } = require("electron");
 const { spawn } = require("node:child_process");
+const chokidar = require("chokidar");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -8,6 +9,9 @@ const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdown", ".mkd", ".txt
 
 let mainWindow = null;
 const pendingExternalOpenPaths = [];
+let fileWatcher = null;
+let watchedFilePath = null;
+let watchDebounceTimer = null;
 
 function isMarkdownPath(candidatePath) {
   const ext = path.extname(candidatePath).toLowerCase();
@@ -81,6 +85,77 @@ function openInVSCodeAtLine(filePath, line) {
     return;
   }
   throw new Error("Unable to launch VS Code using `code`.");
+}
+
+function clearWatchDebounce() {
+  if (watchDebounceTimer) {
+    clearTimeout(watchDebounceTimer);
+    watchDebounceTimer = null;
+  }
+}
+
+async function stopFileWatcher() {
+  clearWatchDebounce();
+  watchedFilePath = null;
+
+  if (fileWatcher) {
+    const watcher = fileWatcher;
+    fileWatcher = null;
+    await watcher.close();
+  }
+}
+
+function emitFileChanged(payload) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  mainWindow.webContents.send("file:changed", payload);
+}
+
+async function startFileWatcher(filePath) {
+  const resolvedPath = path.resolve(filePath);
+  if (!isMarkdownPath(resolvedPath)) {
+    throw new Error("Can only watch markdown files.");
+  }
+
+  if (fileWatcher && watchedFilePath === resolvedPath) {
+    return;
+  }
+
+  await stopFileWatcher();
+  watchedFilePath = resolvedPath;
+
+  const watcher = chokidar.watch(resolvedPath, {
+    ignoreInitial: true,
+    awaitWriteFinish: {
+      stabilityThreshold: 220,
+      pollInterval: 60,
+    },
+  });
+
+  const scheduleRefresh = () => {
+    clearWatchDebounce();
+    watchDebounceTimer = setTimeout(async () => {
+      if (!watchedFilePath) {
+        return;
+      }
+
+      try {
+        const payload = await readMarkdownPayload(watchedFilePath);
+        emitFileChanged(payload);
+      } catch (error) {
+        console.error("Failed to refresh watched markdown file:", error);
+      }
+    }, 140);
+  };
+
+  watcher.on("change", scheduleRefresh);
+  watcher.on("add", scheduleRefresh);
+  watcher.on("error", (error) => {
+    console.error("Markdown file watcher error:", error);
+  });
+
+  fileWatcher = watcher;
 }
 
 function flushPendingExternalOpens() {
@@ -195,6 +270,20 @@ ipcMain.handle("editor:open-in-vscode", (_, payload) => {
   return true;
 });
 
+ipcMain.handle("filewatch:start", async (_, filePath) => {
+  if (!filePath || typeof filePath !== "string") {
+    throw new Error("Invalid file path for file watch.");
+  }
+
+  await startFileWatcher(filePath);
+  return true;
+});
+
+ipcMain.handle("filewatch:stop", async () => {
+  await stopFileWatcher();
+  return true;
+});
+
 ipcMain.handle("theme:get-system", () => {
   return nativeTheme.shouldUseDarkColors ? "vscode-dark" : "vscode-light";
 });
@@ -223,4 +312,8 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+app.on("before-quit", async () => {
+  await stopFileWatcher();
 });

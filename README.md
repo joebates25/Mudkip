@@ -24,6 +24,7 @@ This builds the web renderer and starts an Electron desktop window with:
 - Optional launch-path file opening
 - `Table of Contents` drawer (toggle from toolbar)
 - `Open in VS Code` at the source line matching current preview scroll position
+- `Auto-refresh` toggle to reload when the currently opened markdown file is edited/saved
 - macOS external file-open event handling (`Open With` / Finder handoff)
 
 ```bash
