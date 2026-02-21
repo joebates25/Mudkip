@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- App Icon Background (Squircle) -->
+  <rect x="40" y="40" width="432" height="432" rx="90" fill="#00AEEF" />
+  
+  <!-- Subtle Gradient Overlay for Depth -->
+  <rect x="40" y="40" width="432" height="432" rx="90" fill="url(#paint0_linear)" fill-opacity="0.2"/>
+
+  <!-- The "Fin" Markdown Symbol -->
+  <path d="M120 360V180L200 260L256 100L312 260L392 180V360" stroke="white" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- "Gill" Speed/Text Lines -->
+  <line x1="340" y1="280" x2="420" y2="280" stroke="#FF8C00" stroke-width="24" stroke-linecap="round"/>
+  <line x1="360" y1="325" x2="420" y2="325" stroke="#FF8C00" stroke-width="24" stroke-linecap="round"/>
+  <line x1="380" y1="370" x2="420" y2="370" stroke="#FF8C00" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="paint0_linear" x1="40" y1="40" x2="472" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="1" stop-color="black"/>
+    </linearGradient>
+  </defs>
+</svg>

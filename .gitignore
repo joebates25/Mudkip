@@ -4,6 +4,8 @@ package-lock.json
 
 # Build output
 dist/
+src-tauri/target/
+src-tauri/gen/
 
 # Logs
 npm-debug.log*
@@ -20,3 +22,7 @@ pnpm-debug.log*
 .DS_Store
 .vscode/
 .idea/
+
+# Benchmark artifacts (keep summary only)
+benchmark/*
+!benchmark/summary.md

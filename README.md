@@ -1,72 +1,34 @@
 # Mudkip
 
-Prototype for a **read-only markdown viewer** with a local file picker and a render surface styled to match **VS Code Markdown Preview** as closely as possible.
+Read-only markdown viewer built with **Tauri + Vite**, styled to match **VS Code Markdown Preview**.
 
-## Run (Browser)
-
-```bash
-bun install
-bun run dev
-```
-
-Open the local Vite URL (normally `http://localhost:5173`).
-
-## Run (Cross-platform desktop: macOS, Windows, Linux)
+## Run (Desktop)
 
 ```bash
 bun install
 bun run desktop
 ```
 
-This builds the web renderer and starts an Electron desktop window with:
-
-- Native OS file open dialog
-- Optional launch-path file opening
-- `Table of Contents` drawer (toggle from toolbar)
-- `Open in VS Code` at the source line matching current preview scroll position
-- `Auto-refresh` toggle to reload when the currently opened markdown file is edited/saved
-- macOS external file-open event handling (`Open With` / Finder handoff)
-
-```bash
-bun run build
-bunx electron . /absolute/path/to/file.md
-```
-
-## Package (macOS)
+## Build Release Bundles
 
 ```bash
 bun run desktop:dist
 ```
 
-This produces a packaged macOS app/DMG with markdown file associations (`.md`, `.markdown`, `.mdown`, `.mkd`) for Finder `Open With`.
+## Features
 
-## What this prototype does
+- Native markdown file picker
+- Launch-path and external file-open handling
+- Table of contents drawer
+- Open current source location in VS Code
+- Auto-refresh while the opened file changes on disk
+- Dark+/Light+ theme toggle aligned with system preference on launch
 
-- Opens local markdown files through a file dialog
-- Renders markdown read-only in a dedicated preview pane
-- Uses VS Code's own markdown preview CSS as the base
-- Uses VS Code-like token/theme variables for Dark+ and Light+ modes
-- Supports fenced code blocks with highlighting
+## Project Layout
 
-## Fidelity notes (VS Code parity)
-
-This POC gets close by reusing upstream VS Code markdown preview styles from:
-
-- `extensions/markdown-language-features/media/markdown.css`
-- `extensions/markdown-language-features/media/highlight.css`
-
-Remaining differences from true VS Code preview:
-
-- VS Code applies full workbench theme tokens dynamically; this POC hardcodes a subset
-- VS Code preview includes extension integrations and webview runtime features (such as command URIs and richer security model)
-- Font rendering can differ by platform and browser
-
-## Files
-
-- `index.html`: app shell, toolbar, and preview mount
-- `src/main.js`: file open flow and markdown rendering
-- `src/styles/vscode-markdown.css`: copied from VS Code source
-- `src/styles/vscode-highlight.css`: copied from VS Code source
-- `src/styles/app.css`: shell styling and theme variable mapping
-- `electron/main.cjs`: cross-platform desktop main process
-- `electron/preload.cjs`: secure Electron IPC bridge for open/read actions
+- `index.html`: app shell
+- `src/main.js`: renderer behavior
+- `src/desktop-api.js`: Tauri desktop bridge for renderer
+- `src-tauri/src/lib.rs`: native commands/events/state
+- `src-tauri/tauri.conf.json`: Tauri app and bundling config
+- `benchmark/summary.md`: latest performance snapshot summary

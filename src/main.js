@@ -1,3 +1,4 @@
+import "./desktop-api.js";
 import MarkdownIt from "markdown-it";
 import markdownItTaskLists from "markdown-it-task-lists";
 import markdownItFootnote from "markdown-it-footnote";
@@ -83,7 +84,7 @@ const defaultMarkdown = `# Mudkip
 
 Read-only preview tuned to match VS Code Markdown Preview.
 
-- Native file open dialog in Electron
+- Native file open dialog in desktop app
 - Table of contents drawer from headings
 - "Open in VS Code" at current scroll position
 - Auto-refresh on save for opened files
