@@ -97,10 +97,64 @@ function setTheme(themeClass) {
   document.body.classList.add(themeClass);
 }
 
+function isThemeClass(value) {
+  return value === "vscode-dark" || value === "vscode-light";
+}
+
 function setTOCOpen(isOpen) {
   appShellEl.classList.toggle("toc-open", isOpen);
   toggleTOCButton.setAttribute("aria-expanded", String(isOpen));
   tocDrawerEl.setAttribute("aria-hidden", String(!isOpen));
+}
+
+async function applyThemeFromSystemPreference() {
+  if (!desktopAPI || typeof desktopAPI.getSystemTheme !== "function") {
+    themeSelect.value = "vscode-dark";
+    setTheme("vscode-dark");
+    return;
+  }
+
+  try {
+    const systemTheme = await desktopAPI.getSystemTheme();
+    if (isThemeClass(systemTheme)) {
+      themeSelect.value = systemTheme;
+      setTheme(systemTheme);
+      return;
+    }
+  } catch {
+    // Fall back to Dark+ below.
+  }
+
+  themeSelect.value = "vscode-dark";
+  setTheme("vscode-dark");
+}
+
+function applyStartupOptions(options, config = {}) {
+  if (!options || typeof options !== "object") {
+    return;
+  }
+
+  const syncWatcher = config.syncWatcher !== false;
+
+  if (isThemeClass(options.theme)) {
+    themeSelect.value = options.theme;
+    setTheme(options.theme);
+  }
+
+  if (typeof options.tocOpen === "boolean") {
+    setTOCOpen(options.tocOpen);
+  }
+
+  if (typeof options.autoRefresh === "boolean") {
+    autoRefreshEnabled = options.autoRefresh;
+    updateAutoRefreshButton();
+
+    if (syncWatcher) {
+      syncAutoRefreshWatcher().catch((error) => {
+        console.error("Failed to sync auto-refresh watcher:", error);
+      });
+    }
+  }
 }
 
 function slugifyHeading(text) {
@@ -427,32 +481,6 @@ themeSelect.addEventListener("change", (event) => {
   setTheme(event.target.value);
 });
 
-if (desktopAPI) {
-  desktopAPI
-    .getSystemTheme()
-    .then((systemTheme) => {
-      if (systemTheme === "vscode-light" || systemTheme === "vscode-dark") {
-        themeSelect.value = systemTheme;
-        setTheme(systemTheme);
-      } else {
-        setTheme("vscode-dark");
-      }
-    })
-    .catch(() => {
-      setTheme("vscode-dark");
-    });
-
-  if (typeof desktopAPI.onOpenOnLaunch === "function") {
-    desktopAPI.onOpenOnLaunch((filePath) => {
-      openDesktopFileByPath(filePath).catch((error) => {
-        console.error("Failed to open launch file:", error);
-      });
-    });
-  }
-} else {
-  setTheme("vscode-dark");
-}
-
 renderMarkdown(defaultMarkdown);
 setTOCOpen(false);
 openVSCodeButton.disabled = true;
@@ -462,6 +490,51 @@ if (!desktopAPI) {
   toggleAutoRefreshButton.disabled = true;
 }
 
-bindExternalOpenEvents().catch((error) => {
-  console.error("Unable to bind external open events:", error);
+async function initializeDesktopStartupOptions() {
+  if (!desktopAPI || typeof desktopAPI.getStartupOptions !== "function") {
+    return null;
+  }
+
+  try {
+    return await desktopAPI.getStartupOptions();
+  } catch (error) {
+    console.error("Failed to load startup options:", error);
+    return null;
+  }
+}
+
+async function initializeApp() {
+  let startupOptions = null;
+
+  if (desktopAPI) {
+    startupOptions = await initializeDesktopStartupOptions();
+  }
+
+  applyStartupOptions(startupOptions, { syncWatcher: false });
+
+  if (!isThemeClass(startupOptions?.theme)) {
+    await applyThemeFromSystemPreference();
+  }
+
+  if (desktopAPI) {
+    if (typeof desktopAPI.onStartupOptions === "function") {
+      desktopAPI.onStartupOptions((options) => {
+        applyStartupOptions(options);
+      });
+    }
+
+    if (typeof desktopAPI.onOpenOnLaunch === "function") {
+      desktopAPI.onOpenOnLaunch((filePath) => {
+        openDesktopFileByPath(filePath).catch((error) => {
+          console.error("Failed to open launch file:", error);
+        });
+      });
+    }
+  }
+
+  await bindExternalOpenEvents();
+}
+
+initializeApp().catch((error) => {
+  console.error("Unable to initialize app:", error);
 });

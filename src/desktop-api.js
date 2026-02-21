@@ -44,6 +44,9 @@ window.markdownViewerDesktop = {
   getSystemTheme() {
     return invoke("theme_get_system");
   },
+  getStartupOptions() {
+    return invoke("app_get_startup_options");
+  },
   consumePendingExternalOpenPath() {
     return invoke("file_consume_pending_opened_path");
   },
@@ -55,5 +58,8 @@ window.markdownViewerDesktop = {
   },
   onFileChanged(callback) {
     return addEventListener("file:changed", callback);
+  },
+  onStartupOptions(callback) {
+    return addEventListener("app:startup-options", callback);
   },
 };

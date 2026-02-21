@@ -9,6 +9,21 @@ bun install
 bun run desktop
 ```
 
+## Run With CLI Options
+
+```bash
+# Open file in Light+ theme, TOC open, auto-refresh enabled
+bun run desktop -- --theme light --toc-open --watch ./notes.md
+```
+
+Supported options:
+
+- `--theme <dark|light>` (aliases: `--dark`, `--light`)
+- `--toc-open` / `--toc-closed` (or `--toc`, `--toc=closed`)
+- `--watch` / `--no-watch` (or `--watch=off`)
+- `-h`, `--help`
+- `-V`, `--version`
+
 ## Build Release Bundles
 
 ```bash
@@ -23,6 +38,7 @@ bun run desktop:dist
 - Open current source location in VS Code
 - Auto-refresh while the opened file changes on disk
 - Dark+/Light+ theme toggle aligned with system preference on launch
+- Startup CLI overrides for theme, TOC open state, and file watching
 
 ## Project Layout
 
