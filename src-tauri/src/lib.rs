@@ -319,6 +319,21 @@ pub fn run() {
 
       Ok(())
     })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app, event| {
+      if let tauri::RunEvent::Opened { urls } = event {
+        for url in urls {
+          let Ok(path) = url.to_file_path() else {
+            continue;
+          };
+
+          let Some(canonical_path) = canonicalize_if_markdown(&path) else {
+            continue;
+          };
+
+          queue_external_open(app, canonical_path.to_string_lossy().to_string(), true);
+        }
+      }
+    });
 }
