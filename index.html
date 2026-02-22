@@ -8,23 +8,71 @@
   <body class="vscode-dark">
     <div class="app-shell">
       <header class="toolbar">
-        <button id="open-file-button" type="button">Open Markdown File</button>
-        <button id="toggle-toc-button" type="button" aria-expanded="false" aria-controls="toc-drawer">Table of Contents</button>
+        <button
+          id="toggle-toc-button"
+          class="icon-button"
+          type="button"
+          aria-expanded="false"
+          aria-controls="toc-drawer"
+          aria-label="Toggle table of contents"
+          title="Toggle table of contents"
+        >
+          &#9776;
+        </button>
+        <div class="open-file-controls">
+          <button id="open-file-button" type="button">Open File</button>
+          <button
+            id="open-file-options-button"
+            class="icon-button"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="open-file-options-menu"
+            aria-label="Open file options"
+            title="Open options"
+          >
+            &#9662;
+          </button>
+          <div id="open-file-options-menu" class="open-file-options-menu" role="menu">
+            <button id="open-folder-button" type="button" role="menuitem">Open Folder</button>
+          </div>
+        </div>
         <button id="open-vscode-button" type="button" disabled>Open in VS Code</button>
         <button id="toggle-autorefresh-button" type="button">Auto-refresh: On</button>
+        <button
+          id="toggle-theme-button"
+          class="icon-button"
+          type="button"
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          &#9728;
+        </button>
         <input id="file-input" type="file" accept=".md,.markdown,.mdown,.mkd,text/markdown" hidden />
-        <label for="theme-select">Theme</label>
-        <select id="theme-select" aria-label="Theme">
-          <option value="vscode-dark">Dark+</option>
-          <option value="vscode-light">Light+</option>
-        </select>
         <span id="file-name" class="file-name">No file selected</span>
+        <button
+          id="toggle-folder-panel-button"
+          class="icon-button toolbar-right-button"
+          type="button"
+          aria-expanded="false"
+          aria-controls="folder-files-drawer"
+          aria-label="Toggle folder files"
+          title="Toggle folder files"
+          hidden
+        >
+          &#128193;
+        </button>
       </header>
       <section class="content-area">
         <aside id="toc-drawer" class="toc-drawer" aria-hidden="true">
           <div class="toc-header">Contents</div>
           <div id="toc-empty" class="toc-empty">No headings found.</div>
           <ul id="toc-list" class="toc-list"></ul>
+        </aside>
+        <aside id="folder-files-drawer" class="folder-files-drawer" aria-hidden="true">
+          <div class="toc-header">Folder Files</div>
+          <div id="folder-files-empty" class="toc-empty">No markdown files found.</div>
+          <ul id="folder-files-list" class="folder-files-list"></ul>
         </aside>
         <main id="preview" class="preview" aria-live="polite"></main>
       </section>

@@ -52,15 +52,21 @@ body.vscode-light {
 
 .content-area {
   --toc-width: min(300px, 85vw);
+  --folder-files-width: min(320px, 90vw);
   position: relative;
   min-height: 0;
   overflow: hidden;
   padding-left: 0;
-  transition: padding-left 180ms ease;
+  padding-right: 0;
+  transition: padding-left 180ms ease, padding-right 180ms ease;
 }
 
 .app-shell.toc-open .content-area {
   padding-left: var(--toc-width);
+}
+
+.app-shell.folder-files-open .content-area {
+  padding-right: var(--folder-files-width);
 }
 
 .toolbar {
@@ -69,8 +75,8 @@ body.vscode-light {
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--vscode-widget-border);
   background: color-mix(in srgb, var(--vscode-editor-background) 94%, white 6%);
 }
@@ -81,13 +87,97 @@ body.vscode-light {
   background: color-mix(in srgb, var(--vscode-editor-background) 90%, white 10%);
   color: var(--vscode-editor-foreground);
   border-radius: 4px;
-  padding: 6px 10px;
+  padding: 6px 12px;
+  height: 34px;
+  line-height: 1;
+}
+
+.toolbar button:hover,
+.toolbar select:hover {
+  background: color-mix(in srgb, var(--vscode-editor-background) 82%, white 18%);
+}
+
+.toolbar button:focus-visible,
+.toolbar select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--vscode-textLink-foreground) 75%, transparent);
+  outline-offset: 1px;
+}
+
+.icon-button {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.open-file-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+#open-file-button {
+  min-width: 122px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#open-file-options-button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+}
+
+#toggle-theme-button {
+  font-size: 18px;
+}
+
+#toggle-toc-button[aria-expanded="true"],
+#toggle-folder-panel-button[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--vscode-editor-background) 68%, white 32%);
+}
+
+.open-file-options-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: none;
+  flex-direction: column;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 95%, black 5%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  z-index: 40;
+}
+
+.open-file-controls.open .open-file-options-menu {
+  display: flex;
+}
+
+.open-file-options-menu button {
+  text-align: left;
+  width: 100%;
 }
 
 .file-name {
   margin-left: 4px;
   font-size: 12px;
   opacity: 0.75;
+  max-width: min(34vw, 500px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar-right-button {
+  margin-left: auto;
 }
 
 .toc-drawer {
@@ -110,6 +200,26 @@ body.vscode-light {
   transform: translateX(0);
 }
 
+.folder-files-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--folder-files-width);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--vscode-widget-border);
+  background: color-mix(in srgb, var(--vscode-editor-background) 93%, black 7%);
+  transform: translateX(calc(100% + 1px));
+  transition: transform 180ms ease;
+  z-index: 20;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.25);
+}
+
+.app-shell.folder-files-open .folder-files-drawer {
+  transform: translateX(0);
+}
+
 .toc-header {
   padding: 10px 12px;
   font-size: 12px;
@@ -125,7 +235,8 @@ body.vscode-light {
   opacity: 0.7;
 }
 
-.toc-list {
+.toc-list,
+.folder-files-list {
   list-style: none;
   margin: 0;
   padding: 8px 0;
@@ -137,7 +248,8 @@ body.vscode-light {
   padding: 0;
 }
 
-.toc-link {
+.toc-link,
+.folder-file-link {
   display: block;
   width: 100%;
   text-align: left;
@@ -151,8 +263,13 @@ body.vscode-light {
   text-overflow: ellipsis;
 }
 
-.toc-link:hover {
+.toc-link:hover,
+.folder-file-link:hover {
   background: color-mix(in srgb, var(--vscode-editor-background) 80%, white 20%);
+}
+
+.folder-file-link[aria-current="true"] {
+  background: color-mix(in srgb, var(--vscode-editor-background) 70%, white 30%);
 }
 
 .preview {
