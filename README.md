@@ -1,5 +1,7 @@
 # Mudkip
 
+<img src="src-tauri/icons/icon.png" alt="Mudkip icon" width="128" />
+
 Read-only markdown viewer built with **Tauri + Vite**, styled to match **VS Code Markdown Preview**.
 
 ## Run (Desktop)
