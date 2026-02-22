@@ -4,6 +4,10 @@
 
 Read-only markdown viewer built with **Tauri + Vite**, styled to match **VS Code Markdown Preview**.
 
+## Motiviation
+
+I liked how markdown files looked in VS Code Preview mode but didn't like having to open VS Code to view them. 
+
 ## Run (Desktop)
 
 ```bash
